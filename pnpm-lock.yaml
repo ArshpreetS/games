@@ -68,6 +68,9 @@ importers:
         specifier: ^5.25.0
         version: 5.25.0
     devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.3
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.7

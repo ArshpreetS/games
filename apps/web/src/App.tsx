@@ -3,7 +3,9 @@ import { pangramMachine } from '@game-bench/pangram';
 import { PangramGame } from '@game-bench/pangram/ui';
 
 function App() {
-  const [state, send] = useMachine(pangramMachine);
+  const [state, send] = useMachine(pangramMachine, {
+    input: { puzzleIndex: 0 }
+  });
 
   return (
     <PangramGame

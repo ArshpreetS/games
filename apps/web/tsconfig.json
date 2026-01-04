@@ -3,10 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*"],
-  "references": [
-    { "path": "../../packages/protocol" },
-    { "path": "../../packages/engine" },
-    { "path": "../../games/pangram" }
-  ]
+  "include": ["src/**/*"]
 }

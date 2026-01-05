@@ -2,20 +2,26 @@
  * Generic Benchmark Runner
  *
  * Runs any LLM against the game with:
- * - Game tools (observe, submit_word)
- * - Code sandbox tool (Python execution via Vercel Sandbox)
+ * - Game tools (get_game_state, submit_word)
+ * - Code sandbox tool (JavaScript via Vercel Sandbox)
  * - Full metrics tracking (tokens, iterations, tool calls)
  *
  * Usage:
  *   GOOGLE_GENERATIVE_AI_API_KEY=... npx tsx games/pangram/src/benchmark.ts
  *
+ * With Vercel Sandbox (for code execution):
+ *   vercel link && vercel env pull
+ *   GOOGLE_GENERATIVE_AI_API_KEY=... npx tsx games/pangram/src/benchmark.ts
+ *
  * The LLM decides its own strategy - it can:
  * - Call game tools directly
- * - Write Python code to generate word candidates
+ * - Write JavaScript code to generate word candidates
+ * - Fetch word lists from the internet
  * - Analyze patterns and iterate
  */
 
 import { ToolLoopAgent, tool, stepCountIs } from 'ai';
+import { Sandbox } from '@vercel/sandbox';
 import { z } from 'zod';
 import { createActor } from 'xstate';
 import { pangramMachine } from './machine.js';
@@ -127,16 +133,52 @@ export async function runBenchmark(
     };
   };
 
-  // Simple Python code execution (mock for now - replace with Vercel Sandbox)
+  // Create sandbox for code execution (if enabled)
+  let sandbox: Sandbox | null = null;
+  if (finalConfig.enableCodeExecution) {
+    try {
+      sandbox = await Sandbox.create({
+        runtime: 'node22',
+        timeout: 60_000, // 60 second timeout
+      });
+      console.log(`Sandbox created: ${sandbox.sandboxId}`);
+    } catch (err) {
+      console.log('Sandbox creation failed (requires VERCEL_OIDC_TOKEN). Code execution disabled.');
+      finalConfig.enableCodeExecution = false;
+    }
+  }
+
+  // Code execution using Vercel Sandbox
   const executeCode = async (code: string) => {
     toolCallCounts.execute_code++;
-    // For now, return a message that code execution is available
-    // In production, this would call Vercel Sandbox
-    return {
-      success: false,
-      output: 'Code execution requires VERCEL_OIDC_TOKEN. Set up Vercel Sandbox to enable.',
-      error: null,
-    };
+    if (!sandbox) {
+      return {
+        success: false,
+        output: 'Sandbox not available. Set VERCEL_OIDC_TOKEN to enable.',
+        error: 'NO_SANDBOX',
+      };
+    }
+    try {
+      // Run JavaScript code in the sandbox
+      const result = await sandbox.runCommand({
+        cmd: 'node',
+        args: ['-e', code],
+      });
+      const output = await result.stdout();
+      const stderr = await result.stderr();
+      return {
+        success: result.exitCode === 0,
+        output: output || stderr,
+        exitCode: result.exitCode,
+        error: result.exitCode !== 0 ? stderr : null,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        output: '',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
   };
 
   // Define tools using inputSchema (AI SDK 6 syntax)
@@ -157,9 +199,9 @@ export async function runBenchmark(
     }),
     ...(finalConfig.enableCodeExecution ? {
       execute_code: tool({
-        description: 'Execute Python code to help solve the puzzle. Use this to generate word candidates, analyze patterns, etc. Use print() to see output.',
+        description: 'Execute JavaScript code in a sandboxed Node.js environment. Use this to generate word candidates, analyze patterns, or fetch word lists. Use console.log() to output results.',
         inputSchema: z.object({
-          code: z.string().describe('Python code to execute'),
+          code: z.string().describe('JavaScript code to execute'),
         }),
         execute: async ({ code }) => executeCode(code),
       }),
@@ -216,9 +258,15 @@ export async function runBenchmark(
     }
   }
 
-  // Get final state
+  // Get final state and cleanup
   const finalState = actor.getSnapshot();
   actor.stop();
+
+  // Stop sandbox if it was created
+  if (sandbox) {
+    await sandbox.stop();
+    console.log('Sandbox stopped');
+  }
 
   // Calculate metrics - handle different provider formats
   const inputTokens = result.usage?.promptTokens ?? 0;

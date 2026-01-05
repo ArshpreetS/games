@@ -24,6 +24,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.2",
     "@ai-sdk/google": "^3.0.2",
+    "@vercel/sandbox": "^1.1.2",
     "ai": "^6.0.7",
     "ai-sdk-tool-code-execution": "^0.0.2",
     "xstate": "^5.25.0",

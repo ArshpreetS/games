@@ -148,7 +148,7 @@ ${toolDocs}
 ## Strategy Tips
 - Start by calling get_game_state() to see the available letters
 - Try pangrams first (use all 7 letters) - they score the most
-- You can write and execute code to help generate word candidates
+- You can write and execute JavaScript code to help generate word candidates
 - Track which words were accepted vs rejected to learn patterns
 - Be efficient with tokens - maximize score per token spent
 

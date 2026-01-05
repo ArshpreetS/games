@@ -70,6 +70,9 @@ importers:
       '@ai-sdk/google':
         specifier: ^3.0.2
         version: 3.0.2(zod@3.25.76)
+      '@vercel/sandbox':
+        specifier: ^1.1.2
+        version: 1.1.2
       ai:
         specifier: ^6.0.7
         version: 6.0.7(zod@3.25.76)

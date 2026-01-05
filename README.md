@@ -102,4 +102,8 @@ pnpm typecheck    # TypeScript validation
 
 GitHub Actions: `typecheck` → `test` → `build` on every push.
 
+## Guides
+
+- [Adding a New Game](guides/adding-a-new-game.md)
+
 See [`CLAUDE.md`](CLAUDE.md) for AI assistant instructions.

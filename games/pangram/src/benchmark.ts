@@ -49,7 +49,7 @@ export interface BenchmarkResult {
   metrics: {
     tokens: { input: number; output: number; total: number };
     iterations: number;
-    toolCalls: { total: number; observe: number; submit_word: number; execute_code: number };
+    toolCalls: { total: number; get_game_state: number; submit_word: number; execute_code: number };
     efficiency: number;
     duration: number;
   };
@@ -233,16 +233,17 @@ export async function runBenchmark(
 
   // Run the agent
   const result = await agent.generate({
-    prompt: `Play the game and maximize your score. First call get_game_state() to see the letters, then call submit_word() repeatedly with different words. Keep submitting words until you've tried many options.`,
+    prompt: `Play the game and maximize your score.`,
   });
 
   // Log tool calls from steps
   for (const step of result.steps) {
     if (step.toolCalls) {
       for (const tc of step.toolCalls) {
+        if (!tc) continue;
         if (tc.toolName === 'submit_word') {
-          const res = step.toolResults?.find((r: { toolCallId: string }) => r.toolCallId === tc.toolCallId);
-          if (res && typeof res.output === 'object' && res.output !== null) {
+          const res = step.toolResults?.find((r) => r && 'toolCallId' in r && r.toolCallId === tc.toolCallId);
+          if (res && 'output' in res && typeof res.output === 'object' && res.output !== null) {
             const r = res.output as { accepted: boolean; pointsEarned: number };
             const word = (tc.input as { word: string }).word;
             if (r.accepted) {
@@ -252,7 +253,15 @@ export async function runBenchmark(
             }
           }
         } else if (tc.toolName === 'execute_code') {
-          console.log(`  🐍 Code executed`);
+          const code = (tc.input as { code: string }).code;
+          console.log(`  🐍 Code executed:\n${code.split('\n').map(l => '     ' + l).join('\n')}`);
+          const res = step.toolResults?.find((r) => r && 'toolCallId' in r && r.toolCallId === tc.toolCallId);
+          if (res && 'output' in res && typeof res.output === 'object' && res.output !== null) {
+            const r = res.output as { output: string };
+            if (r.output) {
+              console.log(`  📤 Output: ${r.output.slice(0, 500)}${r.output.length > 500 ? '...' : ''}`);
+            }
+          }
         }
       }
     }
@@ -269,8 +278,8 @@ export async function runBenchmark(
   }
 
   // Calculate metrics - handle different provider formats
-  const inputTokens = result.usage?.promptTokens ?? 0;
-  const outputTokens = result.usage?.completionTokens ?? 0;
+  const inputTokens = result.usage?.inputTokens ?? 0;
+  const outputTokens = result.usage?.outputTokens ?? 0;
   const totalTokens = result.usage?.totalTokens ?? (inputTokens + outputTokens);
   const score = finalState.context.score;
   const duration = Date.now() - startTime;

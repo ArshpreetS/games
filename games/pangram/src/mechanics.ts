@@ -3,6 +3,10 @@
  * Pure functions for game logic - no state, no side effects
  */
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
 // ============================================================================
 // Puzzle Data
 // ============================================================================
@@ -141,25 +145,29 @@ export function getWordStats(foundWords: string[], letters: string[]): {
 // Dictionary Validation
 // ============================================================================
 
+// Load dictionary once at module initialization
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const dictionaryPath = join(__dirname, 'dictionary.txt');
+
+let DICTIONARY: Set<string>;
+try {
+  const words = readFileSync(dictionaryPath, 'utf-8')
+    .split('\n')
+    .map(w => w.trim().toLowerCase())
+    .filter(w => w.length > 0);
+  DICTIONARY = new Set(words);
+  console.log(`Dictionary loaded: ${DICTIONARY.size} words`);
+} catch {
+  console.warn('Dictionary not found, using empty set');
+  DICTIONARY = new Set();
+}
+
 /**
- * Validate word against Free Dictionary API
+ * Validate word against local Scrabble dictionary
  */
 export async function validateWordDictionary(word: string): Promise<boolean> {
-  try {
-    const response = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      return Array.isArray(data) && data.length > 0 && data[0].word;
-    }
-
-    return false;
-  } catch {
-    // On network error, reject the word (fail closed)
-    return false;
-  }
+  return DICTIONARY.has(word.toLowerCase());
 }
 
 // ============================================================================

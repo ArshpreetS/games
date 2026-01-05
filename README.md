@@ -62,19 +62,24 @@ The machine accepts any input and provides feedback instead of blocking:
 npx tsx games/pangram/src/agent.ts
 ```
 
-### LLM Agent (with token tracking)
+### LLM Agent Benchmark
 ```bash
-ANTHROPIC_API_KEY=sk-... npx tsx games/pangram/src/llm-agent.ts
+# With Google Gemini
+GOOGLE_GENERATIVE_AI_API_KEY=... npx tsx games/pangram/src/benchmark.ts
+
+# With Anthropic
+ANTHROPIC_API_KEY=sk-... npx tsx games/pangram/src/benchmark.ts \
+  --provider anthropic --model claude-sonnet-4-20250514
 ```
 
 Output includes metrics:
 ```json
 {
-  "score": 143,
-  "tokens": { "input": 4521, "output": 892, "total": 5413 },
-  "iterations": 22,
-  "toolCalls": 40,
-  "efficiency": 26.4
+  "score": 110,
+  "tokens": { "input": 2500, "output": 724, "total": 3224 },
+  "iterations": 25,
+  "toolCalls": { "total": 25, "get_game_state": 1, "submit_word": 23, "execute_code": 1 },
+  "efficiency": 34.12
 }
 ```
 

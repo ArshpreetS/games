@@ -105,5 +105,9 @@ GitHub Actions: `typecheck` → `test` → `build` on every push.
 ## Guides
 
 - [Adding a New Game](guides/adding-a-new-game.md)
+- [Writing Mechanics](guides/writing-mechanics.md) - Pure game logic
+- [Writing Machines](guides/writing-machines.md) - XState v5 state machines
+- [Writing UI](guides/writing-ui.md) - React components
+- [Writing Agents](guides/writing-agents.md) - AI agents that play games
 
 See [`CLAUDE.md`](CLAUDE.md) for AI assistant instructions.
